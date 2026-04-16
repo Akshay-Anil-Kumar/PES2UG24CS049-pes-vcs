@@ -170,6 +170,46 @@ int tree_from_index(ObjectID *id_out) {
         }
     }
 
+    for (int i = 0; i < dir_count; i++) {
+        Tree subtree;
+        subtree.count = 0;
+
+        for (int j = 0; j < index.count; j++) {
+            const char *path = index.entries[j].path;
+
+            if (strncmp(path, dirs[i], strlen(dirs[i])) == 0 &&
+                path[strlen(dirs[i])] == '/') {
+
+                const char *subname = path + strlen(dirs[i]) + 1;
+
+                if (strchr(subname, '/')) continue;
+
+                TreeEntry *e = &subtree.entries[subtree.count++];
+
+                e->mode = index.entries[j].mode;
+                e->hash = index.entries[j].hash;
+                strcpy(e->name, subname);
+            }
+        }
+
+        void *subdata;
+        size_t sublen;
+        ObjectID sub_id;
+
+        if (tree_serialize(&subtree, &subdata, &sublen) != 0) return -1;
+
+        if (object_write(OBJ_TREE, subdata, sublen, &sub_id) != 0) {
+            free(subdata);
+            return -1;
+        }
+
+        free(subdata);
+        TreeEntry *e = &root.entries[root.count++];
+        e->mode = MODE_DIR;
+        e->hash = sub_id;
+        strcpy(e->name, dirs[i]);
+    }
+
     void *data;
     size_t len;
 
