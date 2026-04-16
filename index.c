@@ -135,10 +135,13 @@ int index_status(const Index *index) {
 //
 // Returns 0 on success, -1 on error.
 int index_load(Index *index) {
-    // TODO: Implement index loading
-    // (See Lab Appendix for logical steps)
-    (void)index;
-    return -1;
+    FILE *f = fopen(".pes/index", "r");
+    if (!f) {
+        index->count = 0;
+        return 0;
+    }
+
+    index->count = 0;
 }
 
 // Save the index to .pes/index atomically.
