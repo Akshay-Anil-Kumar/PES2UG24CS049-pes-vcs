@@ -229,7 +229,35 @@ int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_
         free(buffer);
         return -1;
     }
+    
+    if (strcmp(type_str, "blob") == 0) *type_out = OBJ_BLOB;
+    else if (strcmp(type_str, "tree") == 0) *type_out = OBJ_TREE;
+    else if (strcmp(type_str, "commit") == 0) *type_out = OBJ_COMMIT;
+    else {
+        free(buffer);
+        return -1;
+    }
+
+    unsigned char *data_start = (unsigned char *)null_pos + 1;
+
+    *data_out = malloc(size);
+    if (!*data_out) {
+        free(buffer);
+        return -1;
+    }
+
+    memcpy(*data_out, data_start, size);
+    *len_out = size;
+
+    ObjectID computed;
+    compute_hash(buffer, file_size, &computed);
+
+    if (memcmp(computed.hash, id->hash, HASH_SIZE) != 0) {
+        free(buffer);
+        free(*data_out);
+        return -1;
+    }
 
     free(buffer);
-    return -1;
+    return 0;
 }
