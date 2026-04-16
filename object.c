@@ -112,6 +112,9 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
 
     memcpy(full_data, header, header_len);
     memcpy(full_data + header_len, data, len);
+
+    ObjectID id;
+    compute_hash(full_data, total_size, &id);
 }
 
 // Read an object from the store.
