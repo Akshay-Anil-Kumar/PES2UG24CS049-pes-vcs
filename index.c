@@ -220,13 +220,13 @@ int index_add(Index *index, const char *path) {
     long size = ftell(f);
     rewind(f);
 
-    void *buffer = malloc(size);
-    if (!buffer) {
+    void *buffer = size > 0 ? malloc(size) : NULL;
+    if (size > 0 && !buffer) {
         fclose(f);
         return -1;
     }
 
-    if (fread(buffer, 1, size, f) != (size_t)size) {
+    if (size > 0 && fread(buffer, 1, size, f) != (size_t)size) {
         free(buffer);
         fclose(f);
         return -1;
@@ -241,4 +241,22 @@ int index_add(Index *index, const char *path) {
     }
 
     free(buffer);
+
+    struct stat st;
+    if (stat(path, &st) != 0) return -1;
+
+    IndexEntry *e = index_find(index, path);
+
+    if (!e) {
+        if (index->count >= MAX_INDEX_ENTRIES) return -1;
+        e = &index->entries[index->count++];
+    }
+
+    e->mode = st.st_mode;
+    e->hash = id;
+    e->mtime_sec = st.st_mtime;
+    e->size = st.st_size;
+    strcpy(e->path, path);
+
+    return index_save(index);
 }
