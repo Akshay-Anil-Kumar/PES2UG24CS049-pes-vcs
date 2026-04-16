@@ -133,6 +133,34 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
         *slash = '\0';   // remove filename → keep directory
         mkdir(dir, 0755);  // create directory (ignore if exists)
     }
+
+    char temp_path[600];
+    snprintf(temp_path, sizeof(temp_path), "%s.tmp", path);
+
+    int fd = open(temp_path, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    if (fd < 0) {
+        free(full_data);
+        return -1;
+    }
+
+    ssize_t written = write(fd, full_data, total_size);
+    if (written != (ssize_t)total_size) {
+        close(fd);
+        free(full_data);
+        return -1;
+    }
+
+    fsync(fd);
+    close(fd);
+
+    if (rename(temp_path, path) != 0) {
+        free(full_data);
+        return -1;
+    }
+
+    *id_out = id;
+    free(full_data);
+    return 0;
 }
 
 // Read an object from the store.
