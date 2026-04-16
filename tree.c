@@ -136,6 +136,9 @@ int tree_from_index(ObjectID *id_out) {
     Tree root;
     root.count = 0;
 
+    char dirs[1024][256];
+    int dir_count = 0;
+
     for (int i = 0; i < index.count; i++) {
         const char *path = index.entries[i].path;
 
@@ -148,6 +151,22 @@ int tree_from_index(ObjectID *id_out) {
             e->hash = index.entries[i].hash;
             strcpy(e->name, path);
         } else {
+            char dirname[256];
+            strncpy(dirname, path, slash - path);
+            dirname[slash - path] = '\0';
+
+            // check if already added
+            int exists = 0;
+            for (int j = 0; j < dir_count; j++) {
+                if (strcmp(dirs[j], dirname) == 0) {
+                    exists = 1;
+                    break;
+                }
+            }
+
+            if (!exists) {
+                strcpy(dirs[dir_count++], dirname);
+            }
         }
     }
 
